@@ -1,0 +1,159 @@
+[gd_scene load_steps=12 format=3 uid="uid://28mnn3b6av87"]
+
+[ext_resource type="Texture2D" path="res://art/enemyWalking_1.png" id="1_ifp1q"]
+[ext_resource type="Texture2D" path="res://art/enemyWalking_2.png" id="2_55tjn"]
+[ext_resource type="PackedScene" uid="uid://o0i4c4aptlma" path="res://Banana.tscn" id="2_vvtrn"]
+[ext_resource type="Texture2D" path="res://art/enemyFlyingAlt_1.png" id="2_vx6gg"]
+[ext_resource type="Texture2D" path="res://art/enemyFlyingAlt_2.png" id="3_8ntyu"]
+[ext_resource type="Texture2D" path="res://art/enemySwimming_2.png" id="4_vk38a"]
+[ext_resource type="Texture2D" uid="uid://bfofrloyo6s0c" path="res://art/banana.png" id="7_dyvt8"]
+
+[sub_resource type="GDScript" id="GDScript_bvyo2"]
+script/source = "extends CharacterBody2D
+
+signal hit
+signal killed
+@export var Banana_scene: PackedScene
+@export var speed = 50
+
+var life = 100
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	$AnimatedSprite2D.play()
+	var mob_types = $AnimatedSprite2D.get_sprite_frames().get_animation_names()
+	$AnimatedSprite2D.animation = mob_types[randi() % mob_types.size()]
+	
+func acquire_target(m_target):
+	$BananaTurrentShape2D.look_at(m_target)
+	return false
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	print(\"Ham Fonud\")
+	pass
+
+func _on_visible_on_screen_notifier_2d_screen_exited():
+	pass
+
+
+func _physics_process(delta):
+	var player = get_tree().get_nodes_in_group(\"players\")[0]
+
+	look_at(player.position)
+	
+	velocity = position.direction_to(player.position) * speed
+
+	if position.distance_to(player.position) > 10:
+		move_and_slide()
+
+		
+	#target where player is now
+	if player != null:
+		var target = player.position
+		acquire_target(player.position)
+
+func _on_area_2d_area_shape_entered(area_rid, area, area_shape_index, local_shape_index):
+	var bodies = $Area2D.get_overlapping_areas()
+	for body in bodies:
+		if body.is_in_group(\"bullet\"):
+			emit_signal(\"hit\")
+			life -= body.damage
+		if life < 1:
+			emit_signal(\"killed\")
+
+
+
+func _on_shoot_timer_timeout():
+	var b = Banana_scene.instantiate()
+	get_tree().root.add_child(b)
+	b.transform = $BananaTurrentShape2D.global_transform
+"
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1q1xu"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_vx6gg")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_8ntyu")
+}],
+"loop": true,
+"name": &"flying",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_vk38a")
+}],
+"loop": true,
+"name": &"swimming",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ifp1q")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_55tjn")
+}],
+"loop": true,
+"name": &"walking",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rmfqy"]
+radius = 44.007
+height = 119.978
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_mdj0j"]
+radius = 42.0207
+height = 115.992
+
+[node name="Mob" type="CharacterBody2D" groups=["mobs"]]
+scale = Vector2(0.5, 0.5)
+collision_layer = 2
+collision_mask = 4
+script = SubResource("GDScript_bvyo2")
+Banana_scene = ExtResource("2_vvtrn")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_1q1xu")
+animation = &"flying"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -1)
+rotation = 1.56211
+shape = SubResource("CapsuleShape2D_rmfqy")
+
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
+position = Vector2(4, 0)
+
+[node name="BananaTurrentShape2D" type="Sprite2D" parent="."]
+position = Vector2(58, -74)
+rotation = -1.05518
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("7_dyvt8")
+
+[node name="ShootTimer" type="Timer" parent="."]
+wait_time = 5.0
+autostart = true
+
+[node name="HPBar" type="ProgressBar" parent="."]
+offset_left = -68.0
+offset_top = -76.0
+offset_right = 20.0
+offset_bottom = -49.0
+value = 100.0
+show_percentage = false
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+rotation = 1.58264
+shape = SubResource("CapsuleShape2D_mdj0j")
+
+[connection signal="timeout" from="ShootTimer" to="." method="_on_shoot_timer_timeout"]
+[connection signal="area_shape_entered" from="Area2D" to="." method="_on_area_2d_area_shape_entered"]

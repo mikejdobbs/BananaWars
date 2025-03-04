@@ -1,0 +1,227 @@
+[gd_scene load_steps=22 format=4 uid="uid://bdhg3q3avxuyj"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_4rtv0"]
+[ext_resource type="PackedScene" uid="uid://o0i4c4aptlma" path="res://Banana.tscn" id="2_nr44v"]
+[ext_resource type="PackedScene" uid="uid://bq30f3qmujej1" path="res://hud.tscn" id="5_37c7f"]
+[ext_resource type="AudioStream" uid="uid://0hi5w22d2j2d" path="res://art/House In a Forest Loop.ogg" id="6_gjihk"]
+[ext_resource type="AudioStream" uid="uid://dkiy21qkqhog5" path="res://art/gameover.wav" id="7_ofneg"]
+[ext_resource type="AudioStream" uid="uid://bxacptv5agcj5" path="res://art/throw.wav" id="8_illux"]
+[ext_resource type="Texture2D" uid="uid://bfofrloyo6s0c" path="res://art/banana.png" id="8_vec43"]
+[ext_resource type="Texture2D" uid="uid://dro2osduipdw" path="res://art/Tile.png" id="9_wyyrh"]
+[ext_resource type="AudioStream" uid="uid://bajtxer4fkj7k" path="res://art/start.wav" id="9_yn0wd"]
+[ext_resource type="AudioStream" uid="uid://bnig87rhoa8uw" path="res://art/mobDead.wav" id="10_i44hq"]
+[ext_resource type="AudioStream" uid="uid://drjo1xxfgwd7t" path="res://art/PlayerHit.wav" id="12_da4ji"]
+
+[sub_resource type="GDScript" id="GDScript_bvyo2"]
+script/source = "extends CharacterBody2D
+
+signal hit
+signal killed
+@export var Banana_scene: PackedScene
+@export var speed = 50
+
+var life = 100
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	$AnimatedSprite2D.play()
+	var mob_types = $AnimatedSprite2D.get_sprite_frames().get_animation_names()
+	$AnimatedSprite2D.animation = mob_types[randi() % mob_types.size()]
+	
+func acquire_target(m_target):
+	$BananaTurrentShape2D.look_at(m_target)
+	return false
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	print(\"Ham Fonud\")
+	pass
+
+func _on_visible_on_screen_notifier_2d_screen_exited():
+	pass
+
+
+func _physics_process(delta):
+	var player = get_tree().get_nodes_in_group(\"players\")[0]
+
+	look_at(player.position)
+	
+	velocity = position.direction_to(player.position) * speed
+
+	if position.distance_to(player.position) > 10:
+		move_and_slide()
+
+		
+	#target where player is now
+	if player != null:
+		var target = player.position
+		acquire_target(player.position)
+
+func _on_area_2d_area_shape_entered(area_rid, area, area_shape_index, local_shape_index):
+	var bodies = $Area2D.get_overlapping_areas()
+	for body in bodies:
+		if body.is_in_group(\"bullet\"):
+			emit_signal(\"hit\")
+			life -= body.damage
+		if life < 1:
+			emit_signal(\"killed\")
+
+
+
+func _on_shoot_timer_timeout():
+	var b = Banana_scene.instantiate()
+	get_tree().root.add_child(b)
+	b.transform = $BananaTurrentShape2D.global_transform
+"
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_1q1xu"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": null
+}, {
+"duration": 1.0,
+"texture": null
+}],
+"loop": true,
+"name": &"flying",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": null
+}],
+"loop": true,
+"name": &"swimming",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": null
+}, {
+"duration": 1.0,
+"texture": null
+}],
+"loop": true,
+"name": &"walking",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rmfqy"]
+radius = 44.007
+height = 119.978
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_mdj0j"]
+radius = 42.0207
+height = 115.992
+
+[sub_resource type="PackedScene" id="PackedScene_iur1j"]
+_bundled = {
+"conn_count": 2,
+"conns": PackedInt32Array(5, 0, 33, 32, 2, 0, 0, 7, 0, 35, 34, 2, 0, 0),
+"editable_instances": [],
+"names": PackedStringArray("Mob", "scale", "collision_layer", "collision_mask", "script", "Banana_scene", "mobs", "CharacterBody2D", "AnimatedSprite2D", "sprite_frames", "animation", "CollisionShape2D", "position", "rotation", "shape", "VisibleOnScreenNotifier2D", "BananaTurrentShape2D", "texture", "Sprite2D", "ShootTimer", "wait_time", "autostart", "Timer", "HPBar", "offset_left", "offset_top", "offset_right", "offset_bottom", "value", "show_percentage", "ProgressBar", "Area2D", "_on_shoot_timer_timeout", "timeout", "_on_area_2d_area_shape_entered", "area_shape_entered"),
+"node_count": 9,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 7, 0, -1, 5, 1, 0, 2, 1, 3, 2, 4, 3, 5, 4, 1, 6, 0, 0, 8, 8, -1, 2, 9, 5, 10, 6, 0, 0, 0, 11, 11, -1, 3, 12, 7, 13, 8, 14, 9, 0, 0, 0, 15, 15, -1, 1, 12, 10, 0, 0, 0, 18, 16, -1, 4, 12, 11, 13, 12, 1, 13, 17, 14, 0, 0, 0, 22, 19, -1, 2, 20, 15, 21, 16, 0, 0, 0, 30, 23, -1, 6, 24, 17, 25, 18, 26, 19, 27, 20, 28, 21, 29, 22, 0, 0, 0, 31, 31, -1, 0, 0, 7, 0, 11, 11, -1, 2, 13, 23, 14, 24, 0),
+"variants": [Vector2(0.5, 0.5), 2, 4, SubResource("GDScript_bvyo2"), ExtResource("2_nr44v"), SubResource("SpriteFrames_1q1xu"), &"flying", Vector2(0, -1), 1.56211, SubResource("CapsuleShape2D_rmfqy"), Vector2(4, 0), Vector2(58, -74), -1.05518, Vector2(0.2, 0.2), ExtResource("8_vec43"), 5.0, true, -68.0, -76.0, 20.0, -49.0, 100.0, false, 1.58264, SubResource("CapsuleShape2D_mdj0j")],
+"version": 3
+}
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_rxjbd"]
+rough = true
+bounce = 0.44
+absorbent = true
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_wtbca"]
+vertices = PackedVector2Array(32, 32, -32, 32, -32, -32, 32, -32)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-32, -32, 32, -32, 32, 32, -32, 32)])
+agent_radius = 0.0
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_kknou"]
+vertices = PackedVector2Array(32, 32, -32, 32, -32, -32, 32, -32)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-32, -32, 32, -32, 32, 32, -32, 32)])
+agent_radius = 0.0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_3t65v"]
+texture = ExtResource("9_wyyrh")
+texture_region_size = Vector2i(64, 64)
+0:0/0 = 0
+0:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-32, -32, 32, -32, 32, 32, -32, 32)
+0:0/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_wtbca")
+1:0/0 = 0
+1:0/0/physics_layer_0/polygon_0/points = PackedVector2Array(-32, -32, 32, -32, 32, 32, -32, 32)
+1:0/0/navigation_layer_0/polygon = SubResource("NavigationPolygon_kknou")
+
+[sub_resource type="TileSet" id="TileSet_xnurn"]
+tile_size = Vector2i(64, 64)
+occlusion_layer_0/light_mask = 3
+physics_layer_0/collision_layer = 7
+physics_layer_0/collision_mask = 7
+physics_layer_0/physics_material = SubResource("PhysicsMaterial_rxjbd")
+terrain_set_0/mode = 0
+terrain_set_0/terrain_0/name = "Terrain 0"
+terrain_set_0/terrain_0/color = Color(0.501961, 0.345098, 0.25098, 1)
+terrain_set_0/terrain_1/name = "Terrain 1"
+terrain_set_0/terrain_1/color = Color(0.5, 0.4375, 0.25, 1)
+navigation_layer_0/layers = 7
+sources/0 = SubResource("TileSetAtlasSource_3t65v")
+
+[node name="main" type="Node"]
+script = ExtResource("1_4rtv0")
+mob_scene = SubResource("PackedScene_iur1j")
+
+[node name="Layer0" type="TileMapLayer" parent="."]
+use_parent_material = true
+tile_map_data = PackedByteArray("AAACAAMAAAABAAAAAAAIAAMAAAAAAAAAAAAJAAMAAAAAAAAAAAANAAMAAAAAAAAAAAAOAAMAAAABAAAAAAAPAAMAAAAAAAAAAAAHAAMAAAABAAAAAAAWAAYAAAAAAAAAAAAVAAYAAAAAAAAAAAAUAAYAAAABAAAAAAATAAYAAAAAAAAAAAAKAAoAAAAAAAAAAAALAAoAAAAAAAAAAAAMAAoAAAAAAAAAAAANAAoAAAAAAAAAAAACAAsAAAAAAAAAAAACAAoAAAABAAAAAAARAP//AAAAAAAAAAASAP//AAAAAAAAAAATAP//AAAAAAAAAAAcAP//AAAAAAAAAAAcAAAAAAABAAAAAAAcAAEAAAAAAAAAAAAcAAIAAAAAAAAAAAAcAAcAAAABAAAAAAAcAAgAAAABAAAAAAAcAA8AAAAAAAAAAAAbAA8AAAAAAAAAAAAaAA8AAAABAAAAAAAZAA8AAAABAAAAAAAWAA8AAAABAAAAAAAVAA8AAAABAAAAAAAMAA8AAAAAAAAAAAALAA8AAAABAAAAAAAIAA8AAAABAAAAAAAHAA8AAAAAAAAAAAAGAA8AAAABAAAAAAACAA4AAAAAAAAAAAD9////AAAAAAAAAAAAAP//AAABAAAAAAD/////AAABAAAAAAD+////AAAAAAAAAAAJAAYAAAAAAAAAAAAJAAcAAAABAAAAAAAFAA8AAAABAAAAAAAEAA8AAAABAAAAAAADAA8AAAABAAAAAAACAA8AAAABAAAAAAACAA0AAAABAAAAAAACAAwAAAABAAAAAAACAAkAAAAAAAAAAAACAAgAAAAAAAAAAAACAAcAAAABAAAAAAACAAYAAAABAAAAAAACAAUAAAABAAAAAAACAAQAAAAAAAAAAAD9/wAAAAAAAAAAAAD9/wEAAAAAAAAAAAD9/wIAAAABAAAAAAD9/wMAAAABAAAAAAD9/wQAAAAAAAAAAAD9/wUAAAAAAAAAAAD9/wYAAAABAAAAAAD9/wcAAAABAAAAAAD9/wgAAAABAAAAAAD9/wkAAAABAAAAAAD9/woAAAABAAAAAAD9/wsAAAAAAAAAAAD9/wwAAAABAAAAAAD9/w0AAAABAAAAAAD9/w4AAAABAAAAAAD9/w8AAAAAAAAAAAD9/xAAAAABAAAAAAD9/xEAAAABAAAAAAD9/xIAAAABAAAAAAAkAAsAAAABAAAAAAAkAAoAAAAAAAAAAAAkAAkAAAABAAAAAAAkAAgAAAABAAAAAAAkAAcAAAABAAAAAAAkAAYAAAAAAAAAAAAkAAUAAAABAAAAAAAkAAQAAAAAAAAAAAAkAAMAAAABAAAAAAAkAAIAAAAAAAAAAAAkAAEAAAABAAAAAAAkAAAAAAABAAAAAAAkAP//AAAAAAAAAAAkAP7/AAAAAAAAAAAkAP3/AAAAAAAAAAAkAPz/AAAAAAAAAAAkAPv/AAABAAAAAAAkAPr/AAABAAAAAAAkAPn/AAAAAAAAAAAkAPj/AAAAAAAAAAAkAPf/AAAAAAAAAAAkAPb/AAABAAAAAAAkAPX/AAAAAAAAAAAkAPT/AAAAAAAAAAAjAPT/AAAAAAAAAAAiAPT/AAABAAAAAAAhAPT/AAAAAAAAAAAgAPT/AAABAAAAAAAfAPT/AAABAAAAAAAeAPT/AAABAAAAAAAdAPT/AAABAAAAAAAcAPT/AAABAAAAAAAbAPT/AAABAAAAAAAaAPT/AAAAAAAAAAAZAPT/AAABAAAAAAAYAPT/AAAAAAAAAAAXAPT/AAABAAAAAAAWAPT/AAABAAAAAAAVAPT/AAABAAAAAAAQAPT/AAABAAAAAAAPAPT/AAAAAAAAAAAOAPT/AAABAAAAAAANAPT/AAAAAAAAAAAMAPT/AAAAAAAAAAALAPT/AAABAAAAAAAKAPT/AAAAAAAAAAAJAPT/AAABAAAAAAAIAPT/AAABAAAAAAAHAPT/AAABAAAAAAAGAPT/AAAAAAAAAAAFAPT/AAABAAAAAAAEAPT/AAABAAAAAAADAPT/AAABAAAAAAACAPT/AAABAAAAAAABAPT/AAAAAAAAAAAAAPT/AAABAAAAAAD9//T/AAAAAAAAAAD9//X/AAAAAAAAAAD9//b/AAABAAAAAAD9//z/AAABAAAAAAD9//3/AAABAAAAAAD9//7/AAAAAAAAAAAkAAwAAAABAAAAAAAkAA0AAAAAAAAAAAAkAA4AAAABAAAAAAAkAA8AAAABAAAAAAAkABAAAAABAAAAAAAkABEAAAAAAAAAAAAkABIAAAABAAAAAAAkABMAAAAAAAAAAAAkABQAAAAAAAAAAAAkABUAAAAAAAAAAAAkABYAAAAAAAAAAAAkABcAAAABAAAAAAAkABgAAAABAAAAAAAkABkAAAABAAAAAAAkABoAAAAAAAAAAAAkABsAAAAAAAAAAAAkABwAAAAAAAAAAAAkAB0AAAAAAAAAAAAkAB4AAAAAAAAAAAAkAB8AAAABAAAAAAAkACAAAAABAAAAAAAkACEAAAAAAAAAAAAkACIAAAABAAAAAAAkACMAAAABAAAAAAAkACQAAAAAAAAAAAAkACUAAAAAAAAAAAAjACUAAAABAAAAAAAiACUAAAABAAAAAAAhACUAAAABAAAAAAAgACUAAAABAAAAAAAfACUAAAABAAAAAAAeACUAAAABAAAAAAAdACUAAAAAAAAAAAAcACUAAAABAAAAAAAbACUAAAABAAAAAAAaACUAAAABAAAAAAAZACUAAAAAAAAAAAAYACUAAAABAAAAAAAXACUAAAAAAAAAAAAWACUAAAAAAAAAAAAVACUAAAAAAAAAAAAUACUAAAAAAAAAAAATACUAAAAAAAAAAAD9/xsAAAABAAAAAAD9/xwAAAAAAAAAAAD9/x0AAAAAAAAAAAD9/x4AAAABAAAAAAD9/x8AAAAAAAAAAAD9/yAAAAABAAAAAAD9/yEAAAAAAAAAAAD9/yIAAAAAAAAAAAD9/yMAAAAAAAAAAAD9/yQAAAABAAAAAAD9/yUAAAAAAAAAAAD+/yUAAAABAAAAAAD//yUAAAABAAAAAAALACUAAAABAAAAAAAMACUAAAAAAAAAAAANACUAAAAAAAAAAAAOACUAAAAAAAAAAAAPACUAAAABAAAAAAAQACUAAAAAAAAAAAARACUAAAABAAAAAAASACUAAAAAAAAAAAAAACUAAAAAAAAAAAARAAwAAAABAAAAAAARAA0AAAAAAAAAAAARAA4AAAAAAAAAAAARAA8AAAABAAAAAAARABAAAAAAAAAAAAARABEAAAABAAAAAAARABIAAAABAAAAAAD9/xMAAAABAAAAAAAGACUAAAABAAAAAAAHACUAAAABAAAAAAAIACUAAAAAAAAAAAAJACUAAAABAAAAAAAMAP//AAABAAAAAAANAP//AAABAAAAAAAOAP//AAABAAAAAAAPAP//AAABAAAAAAAXAP//AAAAAAAAAAAQAP//AAABAAAAAAAWAP//AAABAAAAAAAYAP//AAAAAAAAAAAZAP//AAABAAAAAAAbAP//AAAAAAAAAAAaAP//AAABAAAAAAAVAP//AAABAAAAAAAUAP//AAABAAAAAAAUAPT/AAAAAAAAAAATAPT/AAABAAAAAAASAPT/AAAAAAAAAAARAPT/AAAAAAAAAAAKACUAAAAAAAAAAAAFACUAAAAAAAAAAAAEACUAAAABAAAAAAADACUAAAAAAAAAAAACACUAAAAAAAAAAAABACUAAAAAAAAAAAD9/xQAAAABAAAAAAD9/xUAAAABAAAAAAD9/xYAAAABAAAAAAD9/xcAAAAAAAAAAAD9/xgAAAAAAAAAAAD9/xkAAAAAAAAAAAD9/xoAAAABAAAAAAAFABsAAAABAAAAAAAGABsAAAABAAAAAAAHABsAAAAAAAAAAAAIABsAAAAAAAAAAAAJABsAAAABAAAAAAAKABsAAAAAAAAAAAALABsAAAABAAAAAAAMABsAAAABAAAAAAANABsAAAABAAAAAAAOABsAAAABAAAAAAAPABsAAAABAAAAAAAQABsAAAABAAAAAAARABsAAAAAAAAAAAASABsAAAAAAAAAAAATABsAAAABAAAAAAAUABsAAAABAAAAAAAVABsAAAABAAAAAAAWABsAAAABAAAAAAAXABsAAAAAAAAAAAAdACIAAAAAAAAAAAAdACEAAAABAAAAAAAdACAAAAABAAAAAAAdAB8AAAABAAAAAAAdAB4AAAAAAAAAAAAdAB0AAAAAAAAAAAAdABwAAAAAAAAAAAAdABsAAAABAAAAAAAdABoAAAAAAAAAAAAdABkAAAAAAAAAAAAdABgAAAAAAAAAAAAdABcAAAABAAAAAAAdABYAAAABAAAAAAAdABUAAAABAAAAAAAdABQAAAAAAAAAAAAJAA8AAAAAAAAAAAAKAA8AAAABAAAAAAAXAA8AAAABAAAAAAAYAA8AAAABAAAAAAAcAAYAAAAAAAAAAAAcAAkAAAABAAAAAAD+//T/AAABAAAAAAD///T/AAAAAAAAAAD9//f/AAABAAAAAAD9//j/AAABAAAAAAD9//n/AAAAAAAAAAD9//r/AAAAAAAAAAD9//v/AAAAAAAAAAA=")
+tile_set = SubResource("TileSet_xnurn")
+
+[node name="Layer1" type="TileMapLayer" parent="."]
+use_parent_material = true
+tile_set = SubResource("TileSet_xnurn")
+
+[node name="Layer2" type="TileMapLayer" parent="."]
+use_parent_material = true
+tile_set = SubResource("TileSet_xnurn")
+
+[node name="DeathTimer" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
+[node name="HUD" parent="." instance=ExtResource("5_37c7f")]
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_gjihk")
+
+[node name="DeathSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_ofneg")
+
+[node name="ThrowHitSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_illux")
+
+[node name="StartSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_yn0wd")
+
+[node name="MobDeathSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("10_i44hq")
+
+[node name="PlayerHitSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("12_da4ji")
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://player.tscn")
+spawn_path = NodePath("../Players")
+spawn_limit = 4
+
+[node name="Players" type="Node" parent="."]
+
+[node name="BananaSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://Banana.tscn")
+spawn_path = NodePath("../Bananas")
+
+[node name="Bananas" type="Node" parent="."]
+
+[connection signal="timeout" from="DeathTimer" to="." method="_on_death_timer_timeout"]

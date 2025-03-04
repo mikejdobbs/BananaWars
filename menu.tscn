@@ -1,0 +1,233 @@
+[gd_scene load_steps=3 format=3 uid="uid://bg7j4hssbymaq"]
+
+[ext_resource type="FontFile" uid="uid://bnos414srl8hd" path="res://fonts/Xolonium-Regular.ttf" id="1_62hg7"]
+
+[sub_resource type="GDScript" id="GDScript_0x2ax"]
+script/source = "extends Node
+
+signal new_server(ip: String, message: String)
+var socket := PacketPeerUDP.new()
+const lan_broadcast_port := 42355
+var found_servers: Array[String] = []
+
+const PORT = 4433
+
+
+func check_packets() -> void:
+	while socket.get_available_packet_count() > 0:
+		var serverip := socket.get_packet_ip()
+		var port := socket.get_packet_port()
+		var bytes := socket.get_packet()
+		var message := bytes.get_string_from_ascii()
+		
+
+		if serverip != '':
+			if not serverip in found_servers:
+				new_server.emit(serverip, message)
+				found_servers.append(serverip)
+				var i = $UI/VBoxContainer/LocalServerList.add_item(serverip,null,true) 
+				#print(\"Added %d as %s\" % [i,serverip] )
+
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	#TODO: Fix as this is null for some reason
+	#$VBoxContainer/StartButton.grab_focus()
+
+	var save = preload(\"save.gd\").new()
+	save.load_data()
+	#set fullscreen optoin
+	if save.fullscreen_on():
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+		# Start paused
+	#get_tree().paused = true
+	# You can save bandwith by disabling server relay and peer notifications.
+	multiplayer.server_relay = false
+
+	# Automatically start the server in headless mode.
+	if DisplayServer.get_name() == \"headless\":
+		print(\"Automatically starting dedicated server\")
+		_on_host_button_pressed.call_deferred()
+	else:	
+		#look for local server broadcasts
+		var bind_err := socket.bind(lan_broadcast_port)
+		if bind_err == OK:
+			var timer := Timer.new()
+			timer.autostart = true
+			add_child(timer)
+			timer.timeout.connect(check_packets)
+		else:
+			push_warning(\"Couldn't bind lan broadcast listener\")
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
+
+		
+
+
+func _on_start_button_pressed():
+	get_tree().change_scene_to_file(\"res://main.tscn\")
+
+
+func _on_quit_button_pressed():
+	get_tree().quit()
+
+
+func _on_options_button_pressed():
+	get_tree().change_scene_to_file(\"res://options.tscn\")
+
+
+func _on_host_button_pressed():
+	if not global.hosting:
+		global.hosting = true
+			# Start as server
+		var peer = ENetMultiplayerPeer.new()
+
+		peer.create_server(PORT)
+		if peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
+			OS.alert(\"Failed to start multiplayer server\")
+			return
+		multiplayer.multiplayer_peer = peer
+	start_game()
+	#get_tree().change_scene_to_file(\"res://main.tscn\")
+	print(multiplayer.get_unique_id(),\":_on_host_button_pressed\")
+
+
+
+func _on_connect_button_pressed():
+	global.hosting = false
+		# Start as client
+	var txt : String = $UI/VBoxContainer/Remote.text
+	if txt == \"\":
+		OS.alert(\"Need a remote to connect to.\")
+		return
+	var peer = ENetMultiplayerPeer.new()
+	peer.create_client(txt, PORT)
+	if peer.get_connection_status() == MultiplayerPeer.CONNECTION_DISCONNECTED:
+		OS.alert(\"Failed to start multiplayer client\")
+		return
+	multiplayer.multiplayer_peer = peer
+	start_game()
+	#get_tree().change_scene_to_file(\"res://main.tscn\")
+	print(multiplayer.get_unique_id(),\":_on_connect_button_pressed\")
+
+
+func start_game():
+	# Hide the UI and unpause to start the game.
+	$UI.hide()
+	get_tree().paused = false
+	# Only change level on the server.
+	# Clients will instantiate the level via the spawner.
+	if multiplayer.is_server():
+		change_level.call_deferred(load(\"res://main.tscn\"))
+		
+		#send unicast
+
+
+# Call this function deferred and only on the main authority (server).
+func change_level(scene: PackedScene):
+	# Remove old level if any.
+	var level = $Level
+	for c in level.get_children():
+		level.remove_child(c)
+		c.queue_free()
+	# Add new level.
+	level.add_child(scene.instantiate())
+
+
+func _on_local_server_list_item_clicked(index: int, at_position: Vector2, mouse_button_index: int) -> void:
+	$UI/VBoxContainer/Remote.text = $UI/VBoxContainer/LocalServerList.get_item_text(index)
+	_on_connect_button_pressed()
+"
+
+[node name="Menu" type="Node"]
+script = SubResource("GDScript_0x2ax")
+
+[node name="UI" type="Control" parent="."]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -6.0
+offset_top = -79.0
+offset_right = -6.0
+offset_bottom = -79.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 6
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -207.0
+offset_top = -196.0
+offset_right = 207.0
+offset_bottom = 196.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HostButton" type="Button" parent="UI/VBoxContainer"]
+layout_mode = 2
+focus_neighbor_top = NodePath("../QuitButton")
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 100
+text = "Host"
+
+[node name="LocalServerList" type="ItemList" parent="UI/VBoxContainer"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 40
+max_text_lines = 2
+auto_height = true
+max_columns = 4
+
+[node name="Remote" type="TextEdit" parent="UI/VBoxContainer"]
+custom_minimum_size = Vector2(2.08165e-12, 100)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 50
+text = "127.0.0.1"
+
+[node name="ConnectButton" type="Button" parent="UI/VBoxContainer"]
+layout_mode = 2
+focus_neighbor_top = NodePath("../QuitButton")
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 100
+text = "Connect"
+
+[node name="OptionsButton" type="Button" parent="UI/VBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 100
+text = "Options"
+
+[node name="QuitButton" type="Button" parent="UI/VBoxContainer"]
+layout_mode = 2
+focus_neighbor_bottom = NodePath("../HostButton")
+theme_override_fonts/font = ExtResource("1_62hg7")
+theme_override_font_sizes/font_size = 100
+text = "Quit"
+
+[node name="Level" type="Node" parent="."]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://main.tscn")
+spawn_path = NodePath("../Level")
+spawn_limit = 1
+
+[connection signal="pressed" from="UI/VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]
+[connection signal="item_clicked" from="UI/VBoxContainer/LocalServerList" to="." method="_on_local_server_list_item_clicked"]
+[connection signal="pressed" from="UI/VBoxContainer/ConnectButton" to="." method="_on_connect_button_pressed"]
+[connection signal="pressed" from="UI/VBoxContainer/OptionsButton" to="." method="_on_options_button_pressed"]
+[connection signal="pressed" from="UI/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]

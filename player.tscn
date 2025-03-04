@@ -1,0 +1,138 @@
+[gd_scene load_steps=12 format=3 uid="uid://dsebvj56sycjy"]
+
+[ext_resource type="Script" path="res://player.gd" id="1_31coh"]
+[ext_resource type="PackedScene" uid="uid://o0i4c4aptlma" path="res://Banana.tscn" id="2_jvfg7"]
+[ext_resource type="Texture2D" uid="uid://c4qvm24inpel1" path="res://art/monkey2.png" id="3_223vw"]
+[ext_resource type="Texture2D" uid="uid://cyivf17svqrft" path="res://art/monkey.png" id="4_bmx2q"]
+[ext_resource type="Texture2D" uid="uid://bfofrloyo6s0c" path="res://art/banana.png" id="5_7dsah"]
+[ext_resource type="Script" path="res://PlayerInput.gd" id="5_uqy27"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_36rpt"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": null
+}],
+"loop": true,
+"name": &"dead",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_223vw")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_bmx2q")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ou1kr"]
+radius = 36.0
+height = 140.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_ik08x"]
+radius = 19.5651
+height = 79.0698
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_dvjny"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:player")
+properties/1/spawn = true
+properties/1/replication_mode = 0
+properties/2/path = NodePath(".:velocity")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:kill_score")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+properties/4/path = NodePath(".:death_score")
+properties/4/spawn = true
+properties/4/replication_mode = 1
+properties/5/path = NodePath("BananaTurrentShape2D:position")
+properties/5/spawn = true
+properties/5/replication_mode = 1
+properties/6/path = NodePath(".:life")
+properties/6/spawn = true
+properties/6/replication_mode = 1
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_r8cbq"]
+properties/0/path = NodePath("PlayerInput:direction")
+properties/0/spawn = false
+properties/0/replication_mode = 1
+
+[node name="Player" type="CharacterBody2D" groups=["players"]]
+scale = Vector2(0.5, 0.5)
+collision_layer = 7
+collision_mask = 7
+script = ExtResource("1_31coh")
+Banana_scene = ExtResource("2_jvfg7")
+banana_distance_from_point = 50
+kill_score = 1
+death_score = 2
+SPAWN_RANDOM = 1000.0
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(-3, 2)
+scale = Vector2(0.25, 0.25)
+sprite_frames = SubResource("SpriteFrames_36rpt")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-4, 12)
+shape = SubResource("CapsuleShape2D_ou1kr")
+
+[node name="BananaTurrentShape2D" type="Sprite2D" parent="."]
+position = Vector2(110, -34)
+rotation = -0.0112994
+scale = Vector2(0.2, 0.2)
+texture = ExtResource("5_7dsah")
+
+[node name="PlayerArea2D" type="Area2D" parent="."]
+collision_layer = 3
+collision_mask = 6
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayerArea2D"]
+position = Vector2(-4, 12)
+scale = Vector2(1.84001, 1.72)
+shape = SubResource("CapsuleShape2D_ik08x")
+
+[node name="RespawnTimer" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
+[node name="ReloadTimer" type="Timer" parent="."]
+wait_time = 0.45
+autostart = true
+
+[node name="ServerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_dvjny")
+
+[node name="PlayerInput" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_r8cbq")
+script = ExtResource("5_uqy27")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="HPBar" type="ProgressBar" parent="."]
+offset_left = -34.0
+offset_top = -102.0
+offset_right = 54.0
+offset_bottom = -75.0
+step = 1.0
+value = 100.0
+show_percentage = false
+
+[node name="ThinkTimer" type="Timer" parent="."]
+wait_time = 0.08
+autostart = true
+
+[connection signal="area_entered" from="PlayerArea2D" to="." method="_on_area_2d_area_entered"]
+[connection signal="area_shape_entered" from="PlayerArea2D" to="." method="_on_area_2d_area_shape_entered"]
+[connection signal="body_shape_entered" from="PlayerArea2D" to="." method="_on_area_2d_body_shape_entered"]
+[connection signal="timeout" from="RespawnTimer" to="." method="_on_respawn_timer_timeout"]
+[connection signal="timeout" from="ReloadTimer" to="." method="_on_reload_timer_timeout"]
+[connection signal="timeout" from="ThinkTimer" to="." method="_on_think_timer_timeout"]

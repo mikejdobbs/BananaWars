@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=3 uid="uid://o0i4c4aptlma"]
+
+[ext_resource type="Script" path="res://Banana.gd" id="1_kvckt"]
+[ext_resource type="Texture2D" uid="uid://bfofrloyo6s0c" path="res://art/banana.png" id="2_ugjud"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_7muoc"]
+radius = 319.981
+height = 1200.07
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_0ol7p"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:speed")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:damage")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:transform")
+properties/3/spawn = true
+properties/3/replication_mode = 1
+
+[node name="Banana" type="Area2D" groups=["bullet"]]
+collision_layer = 4
+collision_mask = 3
+script = ExtResource("1_kvckt")
+speed = 5428
+damage = 10
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_ugjud")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-13, -7)
+rotation = 4.71009
+scale = Vector2(0.25, 0.25)
+shape = SubResource("CapsuleShape2D_7muoc")
+
+[node name="VisibleOnScreenEnabler2D" type="VisibleOnScreenEnabler2D" parent="."]
+rotation = 1.85088
+scale = Vector2(0.25, 0.25)
+enable_node_path = NodePath("")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_0ol7p")
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]
+[connection signal="area_shape_entered" from="." to="." method="_on_area_shape_entered"]
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
